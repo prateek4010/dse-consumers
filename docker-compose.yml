@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  scala-app:
+    build:
+      context: .
+      args:
+        START_DATE: ${START_DATE}
+        END_DATE: ${END_DATE}
+    container_name: scala-app
+    environment:
+      - START_DATE=${START_DATE}
+      - END_DATE=${END_DATE}
+    command: ["sh", "-c", "sbt 'run ${START_DATE} ${END_DATE}'"]

@@ -1,0 +1,9 @@
+target/
+project/
+.idea/
+.vscode/
+.DS_Store
+.metals/
+derby.log
+metastore_db
+spark-warehouse/
