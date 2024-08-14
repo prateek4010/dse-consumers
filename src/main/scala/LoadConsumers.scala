@@ -1,10 +1,11 @@
 package com.paidy.dar.interview
 
+import io.delta.tables._
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.{DataType, StructType, TimestampType}
-
+import org.apache.spark.sql.types.{DataType, StructType, TimestampType, StringType}
 import java.sql.Timestamp
+
 
 object LoadConsumers {
 
@@ -48,31 +49,40 @@ object LoadConsumers {
       case _ => throw new IllegalArgumentException("At most two arguments formatted as yyyy-mm-dd hh:mm:ss timestamps are accepted.")
     }
 
-    println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-    println(f"Start $start")
-    println(f"End $end")
-    println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-
     val spark = createSparkSession()
-
-    // create target table if not exists
+    
     if (!spark.catalog.tableExists(TargetTableName)) {
-      spark.createDataFrame(spark.sparkContext.emptyRDD[Row], DataType.fromDDL(TargetTableSchema).asInstanceOf[StructType])
+    spark.createDataFrame(spark.sparkContext.emptyRDD[Row], DataType.fromDDL(TargetTableSchema).asInstanceOf[StructType])
         .write.partitionBy("created_at_year")
-        .format("delta") // using Delta is optional
+        .format("delta") // or "parquet" or "orc" based on your storage format
         .saveAsTable(TargetTableName)
     }
 
-    // data from the source
-    val sourceDF = spark.read.json("src/test/resources/consumer_events")
-    sourceDF.show()
-    val numRows = sourceDF.count()
-    val numCols = sourceDF.columns.length
-    val columns = sourceDF.columns
-    println(s"DataFrame Shape: ($numRows rows, $numCols columns)")
-    columns.foreach(println)
+    val df = spark.read.format("delta").table(TargetTableName)
+    println("\n\n============================== Table before update =============================================\n\n")
+    df.show()
 
-    // TODO implement logic to load data from sourceDF to target-table named TargetTableName
+    // Load and filter the event data
+    val sourceDF = ConsumerUtils.loadEventData(spark, start, end)
+    println("\n\n============================== Source events =============================================\n\n")
+    sourceDF.show()
+
+    // Transform
+    val transformedEventsDF = ConsumerUtils.transformEventsData(sourceDF, spark)
+    val dedupedTransformedEventsDF = transformedEventsDF.dropDuplicates("id")    // table merge cannot be performed because multiple source rows attempt to update the table
+    println("\n\n============================== Transformed Events before table update =============================================\n\n")
+    transformedEventsDF.show()
+
+    // Update the consumers table
+    ConsumerUtils.updateTargetTable(dedupedTransformedEventsDF, TargetTableName, spark)
+    println("\n\n============================== Updated table =============================================\n\n")
+    val fdf = spark.read.format("delta").table(TargetTableName)
+    fdf.show()
+
+    // //Truncate table if needed
+    // truncateTable(TargetTableName, spark)
+
+    spark.stop()
   }
 
   private def createSparkSession(): SparkSession = {
