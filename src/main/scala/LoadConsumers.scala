@@ -67,11 +67,20 @@ object LoadConsumers {
     println("\n\n============================== Source events =============================================\n\n")
     sourceDF.show()
 
+    // Perform quality checks
+    QualityChecks.checkCompleteness(sourceDF, Seq("id", "event", "reason", "timestamp"))
+
     // Transform
     val transformedEventsDF = ConsumerUtils.transformEventsData(sourceDF, spark)
     val dedupedTransformedEventsDF = transformedEventsDF.dropDuplicates("id")    // table merge cannot be performed because multiple source rows attempt to update the table
     println("\n\n============================== Transformed Events before table update =============================================\n\n")
     transformedEventsDF.show()
+
+    // Perform more quality checks
+    QualityChecks.checkAccuracy(dedupedTransformedEventsDF)
+    QualityChecks.checkCompleteness(dedupedTransformedEventsDF, Seq("id"))
+    QualityChecks.checkConsistency(dedupedTransformedEventsDF)
+    QualityChecks.checkUniqueness(dedupedTransformedEventsDF, "id")
 
     // Update the consumers table
     ConsumerUtils.updateTargetTable(dedupedTransformedEventsDF, TargetTableName, spark)

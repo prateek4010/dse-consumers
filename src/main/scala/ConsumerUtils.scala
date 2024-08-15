@@ -24,7 +24,7 @@ object ConsumerUtils {
         .withColumn("source", get_json_object(col("event"), "$.source"))
         .withColumn("emailVerificationInfo", get_json_object(col("event"), "$.emailVerificationInfo"))
         .withColumn("agent", get_json_object(col("event"), "$.agent"))
-        .withColumn("eventReason", get_json_object(col("event"), "$.reason")) // For reason in event JSON
+        .withColumn("eventReason", get_json_object(col("event"), "$.reason"))         // For reason in event JSON
 
         // Extract address fields
         val dfWithAddress = dfWithFields
@@ -82,11 +82,15 @@ object ConsumerUtils {
     }
 
     def updateTargetTable(eventsDF: DataFrame, targetTableName: String, spark: SparkSession): Any = {
+        val closedEventsDF = eventsDF.filter(col("status") === "closed")
+        val nonClosedEventsDF = eventsDF.filter(col("status") =!= "closed")
+
         val deltaTable = DeltaTable.forName(spark, targetTableName)
         
+        // if the status is closed
         deltaTable.as("target")
         .merge(
-            eventsDF.as("source"),
+            closedEventsDF.as("source"),
             "source.id = target.id"
         )
         .whenMatched()
@@ -107,9 +111,26 @@ object ConsumerUtils {
             "email_verification_status" -> col("source.email_verification_status"),
             "email_verified_at" -> col("source.email_verified_at"),
             "updated_at" -> col("source.updated_at"),
+            "closed_at" -> col("source.closed_at")
+        ))
+        .whenNotMatched()
+        .insertAll()
+        .execute()
+
+        // if the status is enabled or disabled
+        deltaTable.as("target")
+        .merge(
+            nonClosedEventsDF.as("source"),
+            "source.id = target.id"
+        )
+        .whenMatched()
+        .update(Map(
+            "status" -> col("source.status"),
+            "source" -> col("source.source"),
+            "agent" -> col("source.agent"),
+            "updated_at" -> col("source.updated_at"),
             "enabled_at" -> col("source.enabled_at"),
             "disabled_at" -> col("source.disabled_at"),
-            "closed_at" -> col("source.closed_at")
         ))
         .whenNotMatched()
         .insertAll()
