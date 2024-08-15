@@ -131,7 +131,7 @@ To ensure data quality, implement the following checks so that your system is fa
 - **Complex Data**: You might need to further refine the transformation logic, especially if the event data includes complex update logic.
 - **Performance Considerations**: If the event data is large, consider partitioning strategies for both source data and the Delta table.
 - **Error Handling**: Add error handling to manage exceptions during the ETL process.
-- **Test Coverage**: Ensure the ETL job is tested with various scenarios, including edge cases like missing data, duplicate records, and time intervals.
+- **Test Coverage**: Create unit tests and ensure the ETL job is tested with various scenarios, including edge cases like missing data, duplicate records, and time intervals.
 - **Monitoring & Alerting**: Track and log process attributes and performance to enhance it, send alerts and notifications to teams for quick response and setting up campaigns.
 - **Deployment(if any)**: Automating the process of deployment using ci/cd pipelines and cloud services.
 
