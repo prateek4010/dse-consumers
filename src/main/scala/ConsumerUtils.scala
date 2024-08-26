@@ -49,8 +49,8 @@ object ConsumerUtils {
 
         // Add timestamp columns
         val dfWithTimestamps = dfWithStatus
-        .withColumn("created_at", to_timestamp(col("timestamp")))
-        .withColumn("updated_at", to_timestamp(col("timestamp")))
+        .withColumn("created_at", to_timestamp(col("timestamp")))     // converts the timestamp to IST 
+        .withColumn("updated_at", to_timestamp(col("timestamp")))     // converts the timestamp to IST 
         .withColumn("created_at_year", year(col("created_at")))
 
         val dfFinal = dfWithTimestamps.select(
