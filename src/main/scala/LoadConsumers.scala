@@ -10,7 +10,7 @@ import java.sql.Timestamp
 
 object LoadConsumers {
 
-  val TargetTableName: String = "consumers"
+  val TargetTableName: String = "consumerssss"
   val TargetTableSchema: String =
     """
       |    id STRING NOT NULL,

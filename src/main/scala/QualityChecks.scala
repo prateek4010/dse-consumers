@@ -22,7 +22,7 @@ object QualityChecks {
 
     def checkConsistency(df: DataFrame): Unit = {
         // Example: Check that 'email_verified_at' is not null if 'email_verification_status' is 'verified'
-        val inconsistentRecords = df.filter(col("email_verification_status") === "verified" && col("email_verified_at").isNull)
+        val inconsistentRecords = df.filter(col("email_verification_status") === "verified" && col("email_verified_at").isNull)     // may filter out few rows
         assert(inconsistentRecords.count() == 0, "Inconsistent records found in email verification status")
     }
 

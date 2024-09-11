@@ -74,7 +74,7 @@ The `Makefile` provides shortcuts for common tasks:
 - **Test (tbd)**: 
 
     ```bash
-    make clean
+    make test
     ```
 
 
